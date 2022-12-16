@@ -36,6 +36,11 @@ esp_err_t xclk_timer_conf(int ledc_timer, int xclk_freq_hz)
 
 esp_err_t camera_enable_out_clock(camera_config_t* config)
 {
+    if (config->ledc_channel == NO_CAMERA_LEDC_CHANNEL) {
+        g_ledc_channel = NO_CAMERA_LEDC_CHANNEL;
+        return ESP_OK;
+    }
+
     esp_err_t err = xclk_timer_conf(config->ledc_timer, config->xclk_freq_hz);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "ledc_timer_config failed, rc=%x", err);

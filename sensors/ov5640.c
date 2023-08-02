@@ -24,6 +24,8 @@
 static const char *TAG = "ov5640";
 #endif
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 //#define REG_DEBUG_ON
 
 static int read_reg(uint8_t slv_addr, const uint16_t reg){
@@ -790,7 +792,7 @@ static int set_awb_gain_dsp(sensor_t *sensor, int enable)
 static int set_special_effect(sensor_t *sensor, int effect)
 {
     int ret=0;
-    if (effect < 0 || effect > 6) {
+    if (effect < 0 || effect >= ARRAY_SIZE(sensor_special_effects)) {
         return -1;
     }
 

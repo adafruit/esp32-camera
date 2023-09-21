@@ -23,6 +23,10 @@ esp_err_t xclk_timer_conf(int ledc_timer, int xclk_freq_hz)
     timer_conf.freq_hz = xclk_freq_hz;
     timer_conf.speed_mode = LEDC_LOW_SPEED_MODE;
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)   
+    timer_conf.deconfigure = false;
+#endif
+   
 #if ESP_IDF_VERSION_MAJOR >= 4
     timer_conf.clk_cfg = LEDC_AUTO_CLK;
 #endif
@@ -34,7 +38,7 @@ esp_err_t xclk_timer_conf(int ledc_timer, int xclk_freq_hz)
     return err;
 }
 
-esp_err_t camera_enable_out_clock(camera_config_t* config)
+esp_err_t camera_enable_out_clock(const camera_config_t* config)
 {
     if (config->ledc_channel == NO_CAMERA_LEDC_CHANNEL) {
         g_ledc_channel = NO_CAMERA_LEDC_CHANNEL;

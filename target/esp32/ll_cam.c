@@ -44,6 +44,10 @@ static inline int gpio_ll_get_level(gpio_dev_t *hw, int gpio_num)
 #define gpio_matrix_in(a,b,c) esp_rom_gpio_connect_in_signal(a,b,c)
 #endif
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 2) 
+#define ets_delay_us esp_rom_delay_us
+#endif
+
 static const char *TAG = "esp32 ll_cam";
 
 #define I2S_ISR_ENABLE(i) {I2S0.int_clr.i = 1;I2S0.int_ena.i = 1;}
@@ -253,7 +257,7 @@ esp_err_t ll_cam_deinit(cam_obj_t *cam)
         esp_intr_free(cam->cam_intr_handle);
         cam->cam_intr_handle = NULL;
     }
-
+    gpio_uninstall_isr_service();
     return ESP_OK;
 }
 
@@ -487,7 +491,7 @@ size_t IRAM_ATTR ll_cam_memcpy(cam_obj_t *cam, uint8_t *out, const uint8_t *in, 
 esp_err_t ll_cam_set_sample_mode(cam_obj_t *cam, pixformat_t pix_format, uint32_t xclk_freq_hz, uint16_t sensor_pid)
 {
     if (pix_format == PIXFORMAT_GRAYSCALE) {
-        if (sensor_pid == OV3660_PID || sensor_pid == OV5640_PID || sensor_pid == NT99141_PID) {
+        if (sensor_pid == OV3660_PID || sensor_pid == OV5640_PID || sensor_pid == NT99141_PID || sensor_pid == SC031GS_PID || sensor_pid == BF20A6_PID) {
             if (xclk_freq_hz > 10000000) {
                 sampling_mode = SM_0A00_0B00;
                 dma_filter = ll_cam_dma_filter_yuyv_highspeed;

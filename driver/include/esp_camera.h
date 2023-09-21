@@ -72,6 +72,12 @@
 #include "sys/time.h"
 #include "sdkconfig.h"
 
+/**
+ * @brief define for if chip supports camera
+ */
+#define ESP_CAMERA_SUPPORTED (CONFIG_IDF_TARGET_ESP32 | CONFIG_IDF_TARGET_ESP32S3 | \
+                             CONFIG_IDF_TARGET_ESP32S2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -244,6 +250,12 @@ esp_err_t esp_camera_save_to_nvs(const char *key);
  * @param key   A unique nvs key name for the camera settings
  */
 esp_err_t esp_camera_load_from_nvs(const char *key);
+
+/**
+ * @brief Return all frame buffers to be reused again.
+ */
+void esp_camera_return_all(void);
+
 
 #ifdef __cplusplus
 }

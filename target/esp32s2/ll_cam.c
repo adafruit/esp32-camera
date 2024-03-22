@@ -37,7 +37,7 @@ static const char *TAG = "s2 ll_cam";
 #define I2S_ISR_ENABLE(i) {I2S0.int_clr.i = 1;I2S0.int_ena.i = 1;}
 #define I2S_ISR_DISABLE(i) {I2S0.int_ena.i = 0;I2S0.int_clr.i = 1;}
 
-static void IRAM_ATTR ll_cam_vsync_isr(void *arg)
+static void CAMERA_ISR_IRAM_ATTR ll_cam_vsync_isr(void *arg)
 {
     //DBG_PIN_SET(1);
     cam_obj_t *cam = (cam_obj_t *)arg;
@@ -54,7 +54,7 @@ static void IRAM_ATTR ll_cam_vsync_isr(void *arg)
     //DBG_PIN_SET(0);
 }
 
-static void IRAM_ATTR ll_cam_dma_isr(void *arg)
+static void CAMERA_ISR_IRAM_ATTR ll_cam_dma_isr(void *arg)
 {
     cam_obj_t *cam = (cam_obj_t *)arg;
     BaseType_t HPTaskAwoken = pdFALSE;
@@ -217,7 +217,7 @@ esp_err_t ll_cam_set_pin(cam_obj_t *cam, const camera_config_t *config)
     io_conf.pull_up_en = 1;
     io_conf.pull_down_en = 0;
     gpio_config(&io_conf);
-    gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM);
+    gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | CAMERA_ISR_IRAM_FLAG);
     gpio_isr_handler_add(config->pin_vsync, ll_cam_vsync_isr, cam);
     gpio_intr_disable(config->pin_vsync);
 
@@ -255,7 +255,7 @@ esp_err_t ll_cam_set_pin(cam_obj_t *cam, const camera_config_t *config)
 
 esp_err_t ll_cam_init_isr(cam_obj_t *cam)
 {
-    return esp_intr_alloc(ETS_I2S0_INTR_SOURCE, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM, ll_cam_dma_isr, cam, &cam->cam_intr_handle);
+    return esp_intr_alloc(ETS_I2S0_INTR_SOURCE, ESP_INTR_FLAG_LOWMED | CAMERA_ISR_IRAM_FLAG, ll_cam_dma_isr, cam, &cam->cam_intr_handle);
 }
 
 void ll_cam_do_vsync(cam_obj_t *cam)
@@ -394,7 +394,7 @@ size_t IRAM_ATTR ll_cam_memcpy(cam_obj_t *cam, uint8_t *out, const uint8_t *in, 
 esp_err_t ll_cam_set_sample_mode(cam_obj_t *cam, pixformat_t pix_format, uint32_t xclk_freq_hz, uint16_t sensor_pid)
 {
     if (pix_format == PIXFORMAT_GRAYSCALE) {
-        if (sensor_pid == OV3660_PID || sensor_pid == OV5640_PID || sensor_pid == NT99141_PID || sensor_pid == SC031GS_PID || sensor_pid == BF20A6_PID) {
+        if (sensor_pid == OV3660_PID || sensor_pid == OV5640_PID || sensor_pid == NT99141_PID || sensor_pid == SC031GS_PID || sensor_pid == BF20A6_PID || sensor_pid == GC0308_PID) {
             cam->in_bytes_per_pixel = 1;       // camera sends Y8
         } else {
             cam->in_bytes_per_pixel = 2;       // camera sends YU/YV

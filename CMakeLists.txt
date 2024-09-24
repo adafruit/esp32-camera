@@ -84,16 +84,19 @@ if(IDF_TARGET STREQUAL "esp32" OR IDF_TARGET STREQUAL "esp32s2" OR IDF_TARGET ST
   # include the SCCB I2C driver
   # this uses either the legacy I2C API or the newwer version from IDF v5.4
   # as this features a method to obtain the I2C driver from a port number
-  if (idf_version VERSION_GREATER_EQUAL "5.4")
-    list(APPEND srcs driver/sccb-ng.c)
-  else()
-    list(APPEND srcs driver/sccb.c)
-  endif()
+  # CIRCUITPY-CHANGE: always use new I2C driver. Remove this after updating to ESP-IDF v5.4.
+  # if (idf_version VERSION_GREATER_EQUAL "5.3")
+  #   list(APPEND srcs driver/sccb-ng.c)
+  # else()
+  #   list(APPEND srcs driver/sccb.c)
+  # endif()
+
+  list(APPEND srcs driver/sccb-ng.c)
 
 endif()
 
 # CONFIG_ESP_ROM_HAS_JPEG_DECODE is available from IDF v4.4 but
-# previous IDF supported chips already support JPEG decoder, hence okay to use this
+# previous IDF supported chips already support JPEG decoder, hence okay qto use this
 if(idf_version VERSION_GREATER_EQUAL "4.4" AND NOT CONFIG_ESP_ROM_HAS_JPEG_DECODE)
   list(APPEND srcs
     target/tjpgd.c

@@ -23,9 +23,13 @@ static const char *TAG = "sccb-ng";
 
 #define LITTLETOBIG(x) ((x << 8) | (x >> 8))
 
-#include "esp_private/i2c_platform.h"
+// CIRCUITPY-CHANGE: not available until ESP-IDF v5.4. Uncomment after update to ESP-IDF v5.4.
+// #include "esp_private/i2c_platform.h"
 #include "driver/i2c_master.h"
 #include "driver/i2c_types.h"
+
+// CIRCUITPY-CHANGE: need below in i2c_master_get_bus_handle(). Remove after update to ESP-IDF v5.4.
+#include "esp_check.h"
 
 // support IDF 5.x
 #ifndef portTICK_RATE_MS
@@ -65,6 +69,19 @@ static device_t devices[MAX_DEVICES];
 static uint8_t device_count = 0;
 static int sccb_i2c_port;
 static bool sccb_owns_i2c_port;
+
+// CIRCUITPY-CHANGE: remember the passed-in handle also. Remove after update to ESP-IDF v5.4.
+static i2c_master_bus_handle_t sccb_i2c_master_bus_handle;
+
+// CIRCUITPY-CHANGE: simple substitute for v5.4 routine in i2c_master.c.  Remove after update to ESP-IDF v5.4.
+static esp_err_t i2c_master_get_bus_handle(i2c_port_num_t port_num, i2c_master_bus_handle_t *ret_handle)
+{
+    ESP_RETURN_ON_FALSE((port_num < SOC_I2C_NUM), ESP_ERR_INVALID_ARG, TAG, "invalid i2c port number");
+    ESP_RETURN_ON_FALSE((port_num == sccb_i2c_port), ESP_ERR_NOT_FOUND, TAG, "CIRCUITPY: unexpected port_num");
+
+    *ret_handle = sccb_i2c_master_bus_handle;
+    return ESP_OK;
+}
 
 i2c_master_dev_handle_t *get_handle_from_address(uint8_t slv_addr)
 {
@@ -147,7 +164,8 @@ int SCCB_Init(int pin_sda, int pin_scl)
     return ESP_OK;
 }
 
-int SCCB_Use_Port(int i2c_num)
+// CIRCUITPY-CHANGE: pass in handle as an extra argument. Remove arg after update to ESP-IDF v5.4.
+int SCCB_Use_Port(int i2c_num, i2c_master_bus_handle_t handle)
 { // sccb use an already initialized I2C port
     if (sccb_owns_i2c_port)
     {
@@ -158,6 +176,9 @@ int SCCB_Use_Port(int i2c_num)
         return ESP_ERR_INVALID_ARG;
     }
     sccb_i2c_port = i2c_num;
+
+    // CIRCUITPY-CHANGE: remember passed-in handle. Remove after update to ESP-IDF v5.4.
+    sccb_i2c_master_bus_handle = handle;
 
     return ESP_OK;
 }

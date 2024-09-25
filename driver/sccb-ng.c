@@ -23,13 +23,10 @@ static const char *TAG = "sccb-ng";
 
 #define LITTLETOBIG(x) ((x << 8) | (x >> 8))
 
-// CIRCUITPY-CHANGE: not available until ESP-IDF v5.4. Uncomment after update to ESP-IDF v5.4.
+// CIRCUITPY-CHANGE: not available until ESP-IDF v5.4, and not needed
 // #include "esp_private/i2c_platform.h"
 #include "driver/i2c_master.h"
 #include "driver/i2c_types.h"
-
-// CIRCUITPY-CHANGE: need below in i2c_master_get_bus_handle(). Remove after update to ESP-IDF v5.4.
-#include "esp_check.h"
 
 // support IDF 5.x
 #ifndef portTICK_RATE_MS
@@ -50,134 +47,44 @@ const int SCCB_I2C_PORT_DEFAULT = 1;
 const int SCCB_I2C_PORT_DEFAULT = 0;
 #endif
 
-#define MAX_DEVICES UINT8_MAX-1
+// CIRCUITPY-CHANGE: device handles are registered and dregistered on each read and write, so they are not
+// remembered.
 
-/*
- The legacy I2C driver used addresses to differentiate between devices, whereas the new driver uses
- i2c_master_dev_handle_t structs which are registed to the bus.
- To avoid re-writing all camera dependant code, we simply translate the devices address to the corresponding
- device_handle. This keeps all interfaces to the drivers identical.
- To perform this conversion the following local struct is used.
-*/
-typedef struct
-{
-    i2c_master_dev_handle_t dev_handle;
-    uint16_t address;
-} device_t;
-
-static device_t devices[MAX_DEVICES];
-static uint8_t device_count = 0;
-static int sccb_i2c_port;
-static bool sccb_owns_i2c_port;
-
-// CIRCUITPY-CHANGE: remember the passed-in handle also. Remove after update to ESP-IDF v5.4.
+// CIRCUITPY-CHANGE: remember the passed-in bus handle insted of the port.
+// The I2C bus handle is owned and managed by CircuitPython.
 static i2c_master_bus_handle_t sccb_i2c_master_bus_handle;
 
-// CIRCUITPY-CHANGE: simple substitute for v5.4 routine in i2c_master.c.  Remove after update to ESP-IDF v5.4.
-static esp_err_t i2c_master_get_bus_handle(i2c_port_num_t port_num, i2c_master_bus_handle_t *ret_handle)
+static esp_err_t register_device(uint8_t device_addr, i2c_master_dev_handle_t *dev_handle)
 {
-    ESP_RETURN_ON_FALSE((port_num < SOC_I2C_NUM), ESP_ERR_INVALID_ARG, TAG, "invalid i2c port number");
-    ESP_RETURN_ON_FALSE((port_num == sccb_i2c_port), ESP_ERR_NOT_FOUND, TAG, "CIRCUITPY: unexpected port_num");
+    i2c_device_config_t dev_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = device_addr,
+        .scl_speed_hz = SCCB_FREQ,
+    };
 
-    *ret_handle = sccb_i2c_master_bus_handle;
-    return ESP_OK;
+    return i2c_master_bus_add_device(sccb_i2c_master_bus_handle, &dev_config, dev_handle);
 }
 
-i2c_master_dev_handle_t *get_handle_from_address(uint8_t slv_addr)
+static esp_err_t deregister_device(i2c_master_dev_handle_t dev_handle)
 {
-    for (uint8_t i = 0; i < device_count; i++)
-    {
-
-        if (slv_addr == devices[i].address)
-        {
-            return &(devices[i].dev_handle);
-        }
-    }
-
-    ESP_LOGE(TAG, "Device with address %02x not found", slv_addr);
-    return NULL;
+    return i2c_master_bus_rm_device(dev_handle);
 }
 
 int SCCB_Install_Device(uint8_t slv_addr)
 {
-    esp_err_t ret;
-    i2c_master_bus_handle_t bus_handle;
-
-    if (device_count > MAX_DEVICES)
-    {
-        ESP_LOGE(TAG, "cannot add more than %d devices", MAX_DEVICES);
-        return ESP_FAIL;
-    }
-
-    ret = i2c_master_get_bus_handle(sccb_i2c_port, &bus_handle);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to get SCCB I2C Bus handle for port %d", sccb_i2c_port);
-        return ret;
-    }
-
-    i2c_device_config_t dev_cfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = slv_addr, // not yet set
-        .scl_speed_hz = SCCB_FREQ,
-    };
-
-    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &(devices[device_count].dev_handle));
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to install SCCB I2C device: %s", esp_err_to_name(ret));
-        return -1;
-    }
-
-    devices[device_count].address = slv_addr;
-    device_count++;
+    // CIRCUITPY-CHANGE: don't install device: each read or write will do that temporarily,
     return 0;
 }
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
-    ESP_LOGI(TAG, "pin_sda %d pin_scl %d", pin_sda, pin_scl);
-    // i2c_config_t conf;
-    esp_err_t ret;
-
-    sccb_i2c_port = SCCB_I2C_PORT_DEFAULT;
-    sccb_owns_i2c_port = true;
-    ESP_LOGI(TAG, "sccb_i2c_port=%d", sccb_i2c_port);
-
-    i2c_master_bus_config_t i2c_mst_config = {
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .i2c_port = SCCB_I2C_PORT_DEFAULT,
-        .scl_io_num = pin_scl,
-        .sda_io_num = pin_sda,
-        .glitch_ignore_cnt = 7,
-        .flags.enable_internal_pullup = 1};
-
-    i2c_master_bus_handle_t bus_handle;
-    ret = i2c_new_master_bus(&i2c_mst_config, &bus_handle);
-
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to install SCCB I2C master bus on port %d: %s", sccb_i2c_port, esp_err_to_name(ret));
-        return ret;
-    }
-
-    return ESP_OK;
+    // CIRCUITPY-CHANGE: initialization via pins not available; do not use
+    return ESP_FAIL;
 }
 
-// CIRCUITPY-CHANGE: pass in handle as an extra argument. Remove arg after update to ESP-IDF v5.4.
-int SCCB_Use_Port(int i2c_num, i2c_master_bus_handle_t handle)
-{ // sccb use an already initialized I2C port
-    if (sccb_owns_i2c_port)
-    {
-        SCCB_Deinit();
-    }
-    if (i2c_num < 0 || i2c_num > I2C_NUM_MAX)
-    {
-        return ESP_ERR_INVALID_ARG;
-    }
-    sccb_i2c_port = i2c_num;
-
-    // CIRCUITPY-CHANGE: remember passed-in handle. Remove after update to ESP-IDF v5.4.
+// CIRCUITPY-CHANGE: pass in handle instead of port, because handle is owned by CircuitPython
+int SCCB_Use_Handle(i2c_master_bus_handle_t handle)
+{
     sccb_i2c_master_bus_handle = handle;
 
     return ESP_OK;
@@ -185,43 +92,7 @@ int SCCB_Use_Port(int i2c_num, i2c_master_bus_handle_t handle)
 
 int SCCB_Deinit(void)
 {
-    esp_err_t ret;
-
-    for (uint8_t i = 0; i < device_count; i++)
-    {
-        ret = i2c_master_bus_rm_device(devices[i].dev_handle);
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(TAG, "failed to remove SCCB I2C Device");
-            return ret;
-        }
-
-        devices[i].dev_handle = NULL;
-        devices[i].address = 0;
-    }
-    device_count = 0;
-
-    if (!sccb_owns_i2c_port)
-    {
-        return ESP_OK;
-    }
-    sccb_owns_i2c_port = false;
-
-    i2c_master_bus_handle_t bus_handle;
-    ret = i2c_master_get_bus_handle(sccb_i2c_port, &bus_handle);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to get SCCB I2C Bus handle for port %d", sccb_i2c_port);
-        return ret;
-    }
-
-    ret = i2c_del_master_bus(bus_handle);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to get delete SCCB I2C Master Bus at port %d", sccb_i2c_port);
-        return ret;
-    }
-
+    // CIRCUITPY-CHANGE: don't install device: each read or write will do that temporarily,
     return ESP_OK;
 }
 
@@ -229,14 +100,7 @@ uint8_t SCCB_Probe(void)
 {
     uint8_t slave_addr = 0x0;
     esp_err_t ret;
-    i2c_master_bus_handle_t bus_handle;
-
-    ret = i2c_master_get_bus_handle(sccb_i2c_port, &bus_handle);
-    if (ret != ESP_OK)
-    {
-        ESP_LOGE(TAG, "failed to get SCCB I2C Bus handle for port %d", sccb_i2c_port);
-        return ret;
-    }
+    // CIRCUITPY-CHANGE: already have handle
 
     for (size_t i = 0; i < CAMERA_MODEL_MAX; i++)
     {
@@ -246,7 +110,8 @@ uint8_t SCCB_Probe(void)
         }
         slave_addr = camera_sensor[i].sccb_addr;
 
-        ret = i2c_master_probe(bus_handle, slave_addr, TIMEOUT_MS);
+        // CIRCUITPY-CHANGE: use saved handle
+        ret = i2c_master_probe(sccb_i2c_master_bus_handle, slave_addr, TIMEOUT_MS);
 
         if (ret == ESP_OK)
         {
@@ -262,14 +127,19 @@ uint8_t SCCB_Probe(void)
 
 uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint8_t tx_buffer[1];
     uint8_t rx_buffer[1];
 
     tx_buffer[0] = reg;
 
-    esp_err_t ret = i2c_master_transmit_receive(dev_handle, tx_buffer, 1, rx_buffer, 1, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit_receive(dev_handle, tx_buffer, 1, rx_buffer, 1, TIMEOUT_MS);
+    deregister_device(dev_handle);
 
     if (ret != ESP_OK)
     {
@@ -281,13 +151,18 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
 
 int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint8_t tx_buffer[2];
     tx_buffer[0] = reg;
     tx_buffer[1] = data;
 
-    esp_err_t ret = i2c_master_transmit(dev_handle, tx_buffer, 2, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit(dev_handle, tx_buffer, 2, TIMEOUT_MS);
+    deregister_device(dev_handle);
 
     if (ret != ESP_OK)
     {
@@ -299,14 +174,19 @@ int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
 
 uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint8_t rx_buffer[1];
 
     uint16_t reg_htons = LITTLETOBIG(reg);
     uint8_t *reg_u8 = (uint8_t *)&reg_htons;
 
-    esp_err_t ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 1, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 1, TIMEOUT_MS);
+    deregister_device(dev_handle);
 
     if (ret != ESP_OK)
     {
@@ -318,7 +198,7 @@ uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
 
 int SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint16_t reg_htons = LITTLETOBIG(reg);
 
@@ -327,7 +207,12 @@ int SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
     tx_buffer[1] = reg_htons & 0x00ff;
     tx_buffer[2] = data;
 
-    esp_err_t ret = i2c_master_transmit(dev_handle, tx_buffer, 3, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit(dev_handle, tx_buffer, 3, TIMEOUT_MS);
+    deregister_device(dev_handle);
 
     if (ret != ESP_OK)
     {
@@ -338,14 +223,19 @@ int SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
 
 uint16_t SCCB_Read_Addr16_Val16(uint8_t slv_addr, uint16_t reg)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint8_t rx_buffer[2];
 
     uint16_t reg_htons = LITTLETOBIG(reg);
     uint8_t *reg_u8 = (uint8_t *)&reg_htons;
 
-    esp_err_t ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 2, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 2, TIMEOUT_MS);
+    deregister_device(dev_handle);
     uint16_t data = ((uint16_t)rx_buffer[0] << 8) | (uint16_t)rx_buffer[1];
 
     if (ret != ESP_OK)
@@ -358,7 +248,7 @@ uint16_t SCCB_Read_Addr16_Val16(uint8_t slv_addr, uint16_t reg)
 
 int SCCB_Write_Addr16_Val16(uint8_t slv_addr, uint16_t reg, uint16_t data)
 {
-    i2c_master_dev_handle_t dev_handle = *(get_handle_from_address(slv_addr));
+    // CIRCUITPY-CHANGE: register device only while in use
 
     uint16_t reg_htons = LITTLETOBIG(reg);
 
@@ -368,7 +258,12 @@ int SCCB_Write_Addr16_Val16(uint8_t slv_addr, uint16_t reg, uint16_t data)
     tx_buffer[2] = data >> 8;
     tx_buffer[3] = data & 0x00ff;
 
-    esp_err_t ret = i2c_master_transmit(dev_handle, tx_buffer, 4, TIMEOUT_MS);
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    register_device(slv_addr, &dev_handle);
+    ret = i2c_master_transmit(dev_handle, tx_buffer, 4, TIMEOUT_MS);
+    deregister_device(dev_handle);
 
     if (ret != ESP_OK)
     {

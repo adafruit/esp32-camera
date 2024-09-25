@@ -157,8 +157,8 @@ typedef struct {
     camera_conv_mode_t conv_mode;   /*!< RGB<->YUV Conversion mode */
 #endif
 
-    int sccb_i2c_port;              /*!< If pin_sccb_sda is -1, use the already configured I2C bus by number */
-    // CIRCUITPY-CHANGE: Pass in handle to config. Remove after update to ESP-IDF v5.4.
+    // CIRCUITPY-CHANGE: use handle instead of port, because it's owned by CircuitPython
+    // int sccb_i2c_port;              /*!< If pin_sccb_sda is -1, use the already configured I2C bus by number */
     i2c_master_bus_handle_t sccb_i2c_master_bus_handle;
 } camera_config_t;
 

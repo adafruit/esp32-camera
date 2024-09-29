@@ -74,6 +74,35 @@ static esp_err_t deregister_device(i2c_master_dev_handle_t dev_handle)
     return ret;
 }
 
+static esp_err_t i2c_transmit_with_addr(uint8_t device_addr, const uint8_t *write_buffer, size_t write_size, int xfer_timeout_ms) {
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle = NULL;
+
+    ret = register_device(slv_addr, &dev_handle);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    ret = i2c_master_transmit(dev_handle, write_buffer, write_size, xfer_timeout_ms);
+    // Always deregister.
+    deregister_device(dev_handle);
+    return ret;
+}
+
+static esp_err_t i2c_transmit_receive_with_addr(uint8_t device_addr, const uint8_t *write_buffer, size_t write_size, uint8_t *read_buffer, size_t read_size, int xfer_timeout_ms) {
+    esp_err_t ret;
+    i2c_master_dev_handle_t dev_handle = NULL;
+
+    ret = register_device(slv_addr, &dev_handle);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    ret = i2c_master_transmit_receive(dev_handle, write_buffer, write_size, read_buffer, read_size, xfer_timeout_ms);
+    // Always deregister.
+    deregister_device(dev_handle);
+    return ret;
+}
+
+
 int SCCB_Install_Device(uint8_t slv_addr)
 {
     // CIRCUITPY-CHANGE: don't install device: each read or write will do that temporarily,
@@ -138,12 +167,7 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
 
     tx_buffer[0] = reg;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit_receive(dev_handle, tx_buffer, 1, rx_buffer, 1, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_receive_with_addr(slv_addr, tx_buffer, 1, rx_buffer, 1, TIMEOUT_MS);
 
     if (ret != ESP_OK)
     {
@@ -161,12 +185,7 @@ int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
     tx_buffer[0] = reg;
     tx_buffer[1] = data;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit(dev_handle, tx_buffer, 2, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_with_addr(dev_handle, tx_buffer, 2, TIMEOUT_MS);
 
     if (ret != ESP_OK)
     {
@@ -185,12 +204,7 @@ uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
     uint16_t reg_htons = LITTLETOBIG(reg);
     uint8_t *reg_u8 = (uint8_t *)&reg_htons;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 1, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_receive_with_addr(dev_handle, reg_u8, 2, rx_buffer, 1, TIMEOUT_MS);
 
     if (ret != ESP_OK)
     {
@@ -209,12 +223,7 @@ int SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
     tx_buffer[1] = reg & 0x00ff;
     tx_buffer[2] = data;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit(dev_handle, tx_buffer, 3, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_with_addr(dev_handle, tx_buffer, 3, TIMEOUT_MS);
 
     if (ret != ESP_OK)
     {
@@ -232,12 +241,7 @@ uint16_t SCCB_Read_Addr16_Val16(uint8_t slv_addr, uint16_t reg)
     uint16_t reg_htons = LITTLETOBIG(reg);
     uint8_t *reg_u8 = (uint8_t *)&reg_htons;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit_receive(dev_handle, reg_u8, 2, rx_buffer, 2, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_receive_with_addr(dev_handle, reg_u8, 2, rx_buffer, 2, TIMEOUT_MS);
     uint16_t data = ((uint16_t)rx_buffer[0] << 8) | (uint16_t)rx_buffer[1];
 
     if (ret != ESP_OK)
@@ -258,12 +262,7 @@ int SCCB_Write_Addr16_Val16(uint8_t slv_addr, uint16_t reg, uint16_t data)
     tx_buffer[2] = data >> 8;
     tx_buffer[3] = data & 0x00ff;
 
-    esp_err_t ret;
-    i2c_master_dev_handle_t dev_handle;
-
-    register_device(slv_addr, &dev_handle);
-    ret = i2c_master_transmit(dev_handle, tx_buffer, 4, TIMEOUT_MS);
-    deregister_device(dev_handle);
+    esp_err_t ret = i2c_transmit_with_addr(dev_handle, tx_buffer, 4, TIMEOUT_MS);
 
     if (ret != ESP_OK)
     {

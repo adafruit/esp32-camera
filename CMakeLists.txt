@@ -94,7 +94,7 @@ if(IDF_TARGET STREQUAL "esp32" OR IDF_TARGET STREQUAL "esp32s2" OR IDF_TARGET ST
 endif()
 
 # CONFIG_ESP_ROM_HAS_JPEG_DECODE is available from IDF v4.4 but
-# previous IDF supported chips already support JPEG decoder, hence okay qto use this
+# previous IDF supported chips already support JPEG decoder, hence okay to use this
 if(idf_version VERSION_GREATER_EQUAL "4.4" AND NOT CONFIG_ESP_ROM_HAS_JPEG_DECODE)
   list(APPEND srcs
     target/tjpgd.c

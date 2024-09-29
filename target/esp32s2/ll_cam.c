@@ -95,7 +95,6 @@ esp_err_t ll_cam_deinit(cam_obj_t *cam)
         esp_intr_free(cam->cam_intr_handle);
         cam->cam_intr_handle = NULL;
     }
-    gpio_uninstall_isr_service();
     return ESP_OK;
 }
 
@@ -177,8 +176,6 @@ esp_err_t ll_cam_config(cam_obj_t *cam, const camera_config_t *config)
     // Configure sampling rate
     I2S0.sample_rate_conf.rx_bck_div_num = 1;
     I2S0.sample_rate_conf.rx_bits_mod = 8;
-
-    I2S0.conf1.rx_pcm_bypass = 1;
 
     I2S0.conf2.i_v_sync_filter_en = 1;
     I2S0.conf2.i_v_sync_filter_thres = 4;

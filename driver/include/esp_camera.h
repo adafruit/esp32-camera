@@ -72,6 +72,9 @@
 #include "sys/time.h"
 #include "sdkconfig.h"
 
+// CIRCUITPY-CHANGE. Remove after updating to ESP-IDF v5.4.
+#include "driver/i2c_types.h"
+
 /**
  * @brief define for if chip supports camera
  */
@@ -154,7 +157,9 @@ typedef struct {
     camera_conv_mode_t conv_mode;   /*!< RGB<->YUV Conversion mode */
 #endif
 
-    int sccb_i2c_port;              /*!< If pin_sccb_sda is -1, use the already configured I2C bus by number */
+    // CIRCUITPY-CHANGE: use handle instead of port, because it's owned by CircuitPython
+    // int sccb_i2c_port;              /*!< If pin_sccb_sda is -1, use the already configured I2C bus by number */
+    i2c_master_bus_handle_t sccb_i2c_master_bus_handle;
 } camera_config_t;
 
 /**

@@ -153,7 +153,7 @@ static esp_err_t camera_probe(const camera_config_t *config, camera_model_t *out
         return ESP_ERR_INVALID_STATE;
     }
 
-    s_state = (camera_state_t *) calloc(sizeof(camera_state_t), 1);
+    s_state = (camera_state_t *) calloc(1, sizeof(camera_state_t));
     if (!s_state) {
         return ESP_ERR_NO_MEM;
     }
@@ -163,12 +163,15 @@ static esp_err_t camera_probe(const camera_config_t *config, camera_model_t *out
         CAMERA_ENABLE_OUT_CLOCK(config);
     }
 
-    if (config->pin_sccb_sda != -1) {
-        ESP_LOGD(TAG, "Initializing SCCB");
-        ret = SCCB_Init(config->pin_sccb_sda, config->pin_sccb_scl);
-    } else {
+    // CIRCUITPY-CHANGE: use passed-in handle; never initialize with pins
+    // if (config->pin_sccb_sda != -1) {
+    //     ESP_LOGD(TAG, "Initializing SCCB");
+    //     ret = SCCB_Init(config->pin_sccb_sda, config->pin_sccb_scl);
+    // } else {
+    {
         ESP_LOGD(TAG, "Using existing I2C port");
-        ret = SCCB_Use_Port(config->sccb_i2c_port);
+        // CIRCUITPY-CHANGE: pass in bus handle.
+        ret = SCCB_Use_Handle(config->sccb_i2c_master_bus_handle);
     }
 
     if(ret != ESP_OK) {
@@ -494,4 +497,3 @@ void esp_camera_return_all(void) {
     }
     cam_give_all();
 }
-

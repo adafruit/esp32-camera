@@ -390,7 +390,7 @@ bool esp_camera_fb_available() {
     if (s_state == NULL) {
         return false;
     }
-    return cam_avail();
+    return cam_get_available_frames();
 }
 
 camera_fb_t *esp_camera_fb_get(void)

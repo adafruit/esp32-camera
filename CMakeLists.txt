@@ -7,9 +7,13 @@ set(priv_requires "")
 set(srcs
   conversions/yuv.c
   conversions/to_jpg.cpp
-  conversions/to_bmp.c
   conversions/jpge.cpp
   )
+
+# to_bmp.c requires esp_jpeg component
+if(CONFIG_CAMERA_JPEG_DECODE_ENABLED)
+  list(APPEND srcs conversions/to_bmp.c)
+endif()
 
 set(priv_include_dirs
   conversions/private_include

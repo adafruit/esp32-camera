@@ -1,5 +1,13 @@
 menu "Camera configuration"
 
+    config CAMERA_JPEG_DECODE_ENABLED
+        bool "Enable JPEG decode support (requires esp_jpeg)"
+        default n
+        help
+            Enable JPEG decoding functions (jpg2rgb565, jpg2bmp, etc.).
+            Requires the esp_jpeg component to be available.
+            Disable this if esp_jpeg is not in your project.
+
     config OV7670_SUPPORT
         bool "Support OV7670 VGA"
         default y

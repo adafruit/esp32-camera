@@ -22,7 +22,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "esp_camera.h"
+#ifdef CONFIG_CAMERA_JPEG_DECODE_ENABLED
 #include "jpeg_decoder.h"
+#endif
 
 typedef size_t (* jpg_out_cb)(void * arg, size_t index, const void* data, size_t len);
 
@@ -121,6 +123,7 @@ bool frame2bmp(camera_fb_t * fb, uint8_t ** out, size_t * out_len);
  */
 bool fmt2rgb888(const uint8_t *src_buf, size_t src_len, pixformat_t format, uint8_t * rgb_buf);
 
+#ifdef CONFIG_CAMERA_JPEG_DECODE_ENABLED
 // Macros for backwards compatibility
 #define JPG_SCALE_NONE JPEG_IMAGE_SCALE_0
 #define JPG_SCALE_2X   JPEG_IMAGE_SCALE_1_2
@@ -128,6 +131,7 @@ bool fmt2rgb888(const uint8_t *src_buf, size_t src_len, pixformat_t format, uint
 #define JPG_SCALE_8X   JPEG_IMAGE_SCALE_1_8
 #define JPG_SCALE_MAX  JPEG_IMAGE_SCALE_1_8
 bool jpg2rgb565(const uint8_t *src, size_t src_len, uint8_t * out, esp_jpeg_image_scale_t scale);
+#endif
 
 /**
  * @brief Chroma subsampling modes for JPEG encoding.

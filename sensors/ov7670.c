@@ -393,7 +393,7 @@ static int init_status(sensor_t *sensor)
 static int set_dummy(sensor_t *sensor, int val){ return -1; }
 static int set_gainceiling_dummy(sensor_t *sensor, gainceiling_t val){ return -1; }
 
-int ov7670_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_ov7670_detect(int slv_addr, sensor_id_t *id)
 {
     if (OV7670_SCCB_ADDR == slv_addr) {
         SCCB_Write(slv_addr, 0xFF, 0x01);//bank sensor
@@ -411,7 +411,7 @@ int ov7670_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int ov7670_init(sensor_t *sensor)
+int esp32_camera_ov7670_init(sensor_t *sensor)
 {
     // Set function pointers
     sensor->reset = reset;
@@ -450,6 +450,14 @@ int ov7670_init(sensor_t *sensor)
     sensor->id.MIDL = SCCB_Read(sensor->slv_addr, REG_MIDL);
     sensor->id.PID = SCCB_Read(sensor->slv_addr, REG_PID);
     sensor->id.VER = SCCB_Read(sensor->slv_addr, REG_VER);
+    
+    // No autofocus support
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
     
     ESP_LOGD(TAG, "OV7670 Attached");
     

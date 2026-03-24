@@ -545,7 +545,7 @@ static int init_status(sensor_t *sensor){
     return 0;
 }
 
-int ov2640_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_ov2640_detect(int slv_addr, sensor_id_t *id)
 {
     if (OV2640_SCCB_ADDR == slv_addr) {
         SCCB_Write(slv_addr, 0xFF, 0x01);//bank sensor
@@ -563,7 +563,7 @@ int ov2640_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int ov2640_init(sensor_t *sensor)
+int esp32_camera_ov2640_init(sensor_t *sensor)
 {
     sensor->reset = reset;
     sensor->init_status = init_status;
@@ -607,6 +607,15 @@ int ov2640_init(sensor_t *sensor)
     sensor->set_res_raw = set_res_raw;
     sensor->set_pll = _set_pll;
     sensor->set_xclk = set_xclk;
+
+    // No autofocus support
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
+
     ESP_LOGD(TAG, "OV2640 Attached");
     return 0;
 }

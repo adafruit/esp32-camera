@@ -179,7 +179,7 @@ static int reset(sensor_t *sensor)
     // Delay 10 ms
     vTaskDelay(10 / portTICK_PERIOD_MS);
 
-    // Write default regsiters
+    // Write default registers
     for (i=0, regs = default_regs; regs[i][0]; i++) {
         SCCB_Write(sensor->slv_addr, regs[i][0], regs[i][1]);
     }
@@ -502,7 +502,7 @@ static int set_xclk(sensor_t *sensor, int timer, int xclk)
     return ret;
 }
 
-int ov7725_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_ov7725_detect(int slv_addr, sensor_id_t *id)
 {
     if (OV7725_SCCB_ADDR == slv_addr) {
         SCCB_Write(slv_addr, 0xFF, 0x01);//bank sensor
@@ -520,7 +520,7 @@ int ov7725_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int ov7725_init(sensor_t *sensor)
+int esp32_camera_ov7725_init(sensor_t *sensor)
 {
     // Set function pointers
     sensor->reset = reset;
@@ -562,6 +562,14 @@ int ov7725_init(sensor_t *sensor)
     sensor->set_res_raw = set_res_raw;
     sensor->set_pll = _set_pll;
     sensor->set_xclk = set_xclk;
+    
+    // No autofocus support
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
     
     // Retrieve sensor's signature
     sensor->id.MIDH = SCCB_Read(sensor->slv_addr, REG_MIDH);

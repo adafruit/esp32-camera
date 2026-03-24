@@ -21,15 +21,21 @@
 #include "xclk.h"
 #include "cam_hal.h"
 
-#if (ESP_IDF_VERSION_MAJOR >= 4) && (ESP_IDF_VERSION_MINOR >= 3)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 3, 0)
 #include "esp_rom_gpio.h"
 #endif
 
 #if (ESP_IDF_VERSION_MAJOR >= 5)
+#include "driver/gpio.h"
 #define GPIO_PIN_INTR_POSEDGE GPIO_INTR_POSEDGE
 #define GPIO_PIN_INTR_NEGEDGE GPIO_INTR_NEGEDGE
 #define gpio_matrix_in(a,b,c) esp_rom_gpio_connect_in_signal(a,b,c)
 #define ets_delay_us(a) esp_rom_delay_us(a)
+#endif
+
+#if (ESP_IDF_VERSION_MAJOR > 5)
+#include "soc/dport_access.h"
+#include "soc/gpio_sig_map.h"
 #endif
 
 static const char *TAG = "s2 ll_cam";
@@ -95,7 +101,6 @@ esp_err_t ll_cam_deinit(cam_obj_t *cam)
         esp_intr_free(cam->cam_intr_handle);
         cam->cam_intr_handle = NULL;
     }
-    gpio_uninstall_isr_service();
     return ESP_OK;
 }
 
@@ -136,7 +141,12 @@ esp_err_t ll_cam_config(cam_obj_t *cam, const camera_config_t *config)
     if(err != ESP_OK) {
         return err;
     }
+#if ESP_IDF_VERSION_MAJOR > 5
+    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_I2S0_CLK_EN);
+    DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN0_REG, DPORT_I2S0_RST);
+#else
     periph_module_enable(PERIPH_I2S0_MODULE);
+#endif
     // Configure the clock
     I2S0.clkm_conf.clkm_div_num = 2; // 160MHz / 2 = 80MHz
     I2S0.clkm_conf.clkm_div_b = 0;
@@ -177,8 +187,6 @@ esp_err_t ll_cam_config(cam_obj_t *cam, const camera_config_t *config)
     // Configure sampling rate
     I2S0.sample_rate_conf.rx_bck_div_num = 1;
     I2S0.sample_rate_conf.rx_bits_mod = 8;
-
-    I2S0.conf1.rx_pcm_bypass = 1;
 
     I2S0.conf2.i_v_sync_filter_en = 1;
     I2S0.conf2.i_v_sync_filter_thres = 4;
@@ -279,9 +287,9 @@ static bool ll_cam_calc_rgb_dma(cam_obj_t *cam){
     size_t nodes_per_line = 1;
     size_t lines_per_node = 1;
 
-    // Calculate DMA Node Size so that it's divisable by or divisor of the line width
+    // Calculate DMA Node Size so that it's divisible by or divisor of the line width
     if(line_width >= node_max){
-        // One or more nodes will be requied for one line
+        // One or more nodes will be required for one line
         for(size_t i = node_max; i > 0; i=i-1){
             if ((line_width % i) == 0) {
                 node_size = i;
@@ -323,10 +331,10 @@ static bool ll_cam_calc_rgb_dma(cam_obj_t *cam){
         // Calculate minimum EOF size = max(mode_size, line_size)
         size_t dma_half_buffer_min = node_size * nodes_per_line;
 
-        // Calculate max EOF size divisable by node size
+        // Calculate max EOF size divisible by node size
         size_t dma_half_buffer = (dma_half_buffer_max / dma_half_buffer_min) * dma_half_buffer_min;
 
-        // Adjust EOF size so that height will be divisable by the number of lines in each EOF
+        // Adjust EOF size so that height will be divisible by the number of lines in each EOF
         size_t lines_per_half_buffer = dma_half_buffer / line_width;
         while((cam->height % lines_per_half_buffer) != 0){
             dma_half_buffer = dma_half_buffer - dma_half_buffer_min;

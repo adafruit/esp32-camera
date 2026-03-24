@@ -1,4 +1,4 @@
-// Copyright 2015-2016 Espressif Systems (Shanghai) PTE LTD
+// Copyright 2015-2025 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "esp_camera.h"
-#include "esp_jpg_decode.h"
+#include "jpeg_decoder.h"
 
 typedef size_t (* jpg_out_cb)(void * arg, size_t index, const void* data, size_t len);
 
@@ -121,7 +121,44 @@ bool frame2bmp(camera_fb_t * fb, uint8_t ** out, size_t * out_len);
  */
 bool fmt2rgb888(const uint8_t *src_buf, size_t src_len, pixformat_t format, uint8_t * rgb_buf);
 
-bool jpg2rgb565(const uint8_t *src, size_t src_len, uint8_t * out, jpg_scale_t scale);
+// Macros for backwards compatibility
+#define JPG_SCALE_NONE JPEG_IMAGE_SCALE_0
+#define JPG_SCALE_2X   JPEG_IMAGE_SCALE_1_2
+#define JPG_SCALE_4X   JPEG_IMAGE_SCALE_1_4
+#define JPG_SCALE_8X   JPEG_IMAGE_SCALE_1_8
+#define JPG_SCALE_MAX  JPEG_IMAGE_SCALE_1_8
+bool jpg2rgb565(const uint8_t *src, size_t src_len, uint8_t * out, esp_jpeg_image_scale_t scale);
+
+/**
+ * @brief Chroma subsampling modes for JPEG encoding.
+ *
+ * CHROMA_444: full chroma resolution (4:4:4)
+ * CHROMA_422: horizontal chroma subsampling (4:2:2)
+ * CHROMA_420: horizontal and vertical subsampling (4:2:0)
+ */
+typedef enum {
+    CHROMA_444 = 1,
+    CHROMA_422 = 2,
+    CHROMA_420 = 3
+} chroma_t;
+
+/**
+ * @brief Set default chroma subsampling mode for JPEG encoding.
+ *
+ * @param chroma Chroma subsampling mode (CHROMA_444, CHROMA_422, CHROMA_420)
+ */
+void jpgSetChroma(chroma_t chroma);
+
+/**
+ * @brief Configure RGB565 input byte order for JPEG encoding.
+ *
+ * Controls how RGB565 source pixel data is interpreted before JPEG conversion.
+ * By default, the encoder assumes big-endian byte order (MSB first), which
+ * matches most ESP32 camera and frame buffer outputs.
+ *
+ * @param enable    True to use big-endian RGB565 (default), false for little-endian.
+ */
+void jpgSetRgb565BE(bool enable);
 
 #ifdef __cplusplus
 }

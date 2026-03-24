@@ -291,7 +291,7 @@ static int set_xclk(sensor_t *sensor, int timer, int xclk)
     return ret;
 }
 
-int sc101iot_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_sc101iot_detect(int slv_addr, sensor_id_t *id)
 {
     if (SC101IOT_SCCB_ADDR == slv_addr) {
         uint8_t MIDL = SCCB_Read(slv_addr, SC101_SENSOR_ID_LOW_REG);
@@ -307,7 +307,7 @@ int sc101iot_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int sc101iot_init(sensor_t *sensor)
+int esp32_camera_sc101iot_init(sensor_t *sensor)
 {
     // Set function pointers
     sensor->reset = reset;
@@ -336,6 +336,14 @@ int sc101iot_init(sensor_t *sensor)
     sensor->set_reg = set_reg;
     sensor->set_xclk = set_xclk;
     
+    // No autofocus support
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
+
     ESP_LOGD(TAG, "sc101iot Attached");
 
     return 0;

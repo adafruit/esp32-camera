@@ -292,7 +292,7 @@ static int set_xclk(sensor_t *sensor, int timer, int xclk)
     return ret;
 }
 
-int sc031gs_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_sc031gs_detect(int slv_addr, sensor_id_t *id)
 {
     if (SC031GS_SCCB_ADDR == slv_addr) {
         uint8_t MIDL = SCCB_Read16(slv_addr, SC031GS_PID_HIGH_REG);
@@ -308,7 +308,7 @@ int sc031gs_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int sc031gs_init(sensor_t *sensor)
+int esp32_camera_sc031gs_init(sensor_t *sensor)
 {
     // Set function pointers
     sensor->reset = reset;
@@ -338,6 +338,14 @@ int sc031gs_init(sensor_t *sensor)
     sensor->set_reg = set_reg;
     sensor->set_xclk = set_xclk;
     
+    // No autofocus support
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
+
     ESP_LOGD(TAG, "sc031gs Attached");
 
     return 0;

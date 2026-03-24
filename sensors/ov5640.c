@@ -386,9 +386,9 @@ static int set_framesize(sensor_t *sensor, framesize_t framesize)
     framesize_t old_framesize = sensor->status.framesize;
     sensor->status.framesize = framesize;
 
-    if(framesize > FRAMESIZE_QSXGA){
-        ESP_LOGE(TAG, "Invalid framesize: %u", framesize);
-        return -1;
+    if (framesize > FRAMESIZE_5MP) {
+        ESP_LOGW(TAG, "Invalid framesize: %u", framesize);
+        framesize = FRAMESIZE_5MP;
     }
     uint16_t w = resolution[framesize].width;
     uint16_t h = resolution[framesize].height;
@@ -1075,7 +1075,7 @@ static int init_status(sensor_t *sensor)
     return 0;
 }
 
-int ov5640_detect(int slv_addr, sensor_id_t *id)
+int esp32_camera_ov5640_detect(int slv_addr, sensor_id_t *id)
 {
     if (OV5640_SCCB_ADDR == slv_addr) {
         uint8_t h = SCCB_Read16(slv_addr, 0x300A);
@@ -1091,7 +1091,7 @@ int ov5640_detect(int slv_addr, sensor_id_t *id)
     return 0;
 }
 
-int ov5640_init(sensor_t *sensor)
+int esp32_camera_ov5640_init(sensor_t *sensor)
 {
     sensor->reset = reset;
     sensor->set_pixformat = set_pixformat;
@@ -1128,5 +1128,23 @@ int ov5640_init(sensor_t *sensor)
     sensor->set_res_raw = set_res_raw;
     sensor->set_pll = _set_pll;
     sensor->set_xclk = set_xclk;
+
+    // Register autofocus function pointers
+#if defined(CONFIG_CAMERA_AF_SUPPORT) && CONFIG_CAMERA_AF_SUPPORT
+    sensor->af_is_supported = ov5640_af_is_supported;
+    sensor->af_init = ov5640_af_init;
+    sensor->af_set_mode = ov5640_af_set_mode;
+    sensor->af_trigger = ov5640_af_trigger;
+    sensor->af_get_status = ov5640_af_get_status;
+    sensor->af_set_manual_position = ov5640_af_set_manual_position;
+#else
+    sensor->af_is_supported = NULL;
+    sensor->af_init = NULL;
+    sensor->af_set_mode = NULL;
+    sensor->af_trigger = NULL;
+    sensor->af_get_status = NULL;
+    sensor->af_set_manual_position = NULL;
+#endif
+
     return 0;
 }

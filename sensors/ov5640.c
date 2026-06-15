@@ -24,6 +24,7 @@
 static const char *TAG = "ov5640";
 #endif
 
+// ADAFRUIT-CHANGE: used below
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 //#define REG_DEBUG_ON
@@ -792,6 +793,7 @@ static int set_awb_gain_dsp(sensor_t *sensor, int enable)
 static int set_special_effect(sensor_t *sensor, int effect)
 {
     int ret=0;
+    // ADAFRUIT-CHANGE: don't hardwire array size
     if (effect < 0 || effect >= ARRAY_SIZE(sensor_special_effects)) {
         return -1;
     }

@@ -18,7 +18,6 @@
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
 #else
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
 static const char* TAG = "sccb";
 #endif
@@ -51,7 +50,7 @@ static bool sccb_owns_i2c_port;
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
-    ESP_LOGI(TAG, "yolo pin_sda %d pin_scl %d", pin_sda, pin_scl);
+    ESP_LOGI(TAG, "pin_sda %d pin_scl %d", pin_sda, pin_scl);
     i2c_config_t conf;
     esp_err_t ret;
 

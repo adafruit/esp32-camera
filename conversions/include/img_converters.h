@@ -22,6 +22,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "esp_camera.h"
+// ADAFRUIT-CHANGE: optional jpeg support
 #ifdef CONFIG_CAMERA_JPEG_DECODE_ENABLED
 #include "jpeg_decoder.h"
 #endif

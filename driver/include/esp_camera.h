@@ -200,6 +200,7 @@ esp_err_t esp_camera_init(const camera_config_t* config);
  */
 esp_err_t esp_camera_deinit(void);
 
+// ADAFRUIT-CHANGE: new function
 /**
  * @brief Obtain pointer to a frame buffer, with timeout.
  *
@@ -213,13 +214,6 @@ camera_fb_t* esp_camera_fb_get_timeout(int timeout_ms);
  * @return pointer to the frame buffer
  */
 camera_fb_t* esp_camera_fb_get(void);
-
-/**
- * @brief Check whether a framebuffer is avaiable without blocking
- *
- * @return true if available, false otherwise
- */
-bool esp_camera_fb_available(void);
 
 /**
  * @brief Return the frame buffer to be reused again.

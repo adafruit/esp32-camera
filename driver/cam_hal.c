@@ -619,6 +619,7 @@ esp_err_t cam_config(const camera_config_t *config, framesize_t frame_size, uint
 #if CONFIG_CAMERA_CORE0
     xTaskCreatePinnedToCore(cam_task, "cam_task", CAM_TASK_STACK, NULL, configMAX_PRIORITIES - 2, &cam_obj->task_handle, 0);
 #elif CONFIG_CAMERA_CORE1
+// ADAFRUIT-CHANGE: be careful about cores
 #if CONFIG_FREERTOS_UNICORE
 #error "Cannot pin to core 1 on unicore"
 #endif

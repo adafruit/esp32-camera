@@ -3,7 +3,7 @@ set(idf_version "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}")
 
 set(priv_requires "")
 
-# ADAFRUIT-CHANGE: JPEG support optional
+# ADAFRUIT-CHANGE: JPEG to bmp support optional
 # set conversion sources
 set(srcs
   conversions/yuv.c

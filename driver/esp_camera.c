@@ -384,25 +384,19 @@ esp_err_t esp_camera_deinit()
     return ret;
 }
 
-#define FB_GET_TIMEOUT (4000)
-
-bool esp_camera_fb_available() {
-    if (s_state == NULL) {
-        return false;
-    }
-    return cam_get_available_frames();
-}
+#define FB_GET_TIMEOUT_MS (4000)
 
 camera_fb_t *esp_camera_fb_get(void)
 {
-    return esp_camera_fb_get_timeout(FB_GET_TIMEOUT);
+    return esp_camera_fb_get_timeout(FB_GET_TIMEOUT_MS);
 }
 
-camera_fb_t *esp_camera_fb_get_timeout(int timeout) {
+camera_fb_t *esp_camera_fb_get_timeout(int timeout_ms)
+{
     if (s_state == NULL) {
         return NULL;
     }
-    camera_fb_t *fb = cam_take(timeout / portTICK_PERIOD_MS);
+    camera_fb_t *fb = cam_take(timeout_ms / portTICK_PERIOD_MS);
     //set the frame properties
     if (fb) {
         fb->width = resolution[s_state->sensor.status.framesize].width;

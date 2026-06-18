@@ -40,6 +40,7 @@ esp_err_t xclk_timer_conf(int ledc_timer, int xclk_freq_hz)
 
 esp_err_t camera_enable_out_clock(const camera_config_t* config)
 {
+    // ADAFRUIT-CHANGE: handle no LEDC channel
     if (config->ledc_channel == NO_CAMERA_LEDC_CHANNEL) {
         g_ledc_channel = NO_CAMERA_LEDC_CHANNEL;
         return ESP_OK;

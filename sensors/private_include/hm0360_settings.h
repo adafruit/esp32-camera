@@ -4,7 +4,7 @@
 #define REG_DLY 0xffff
 #define REGLIST_TAIL 0x0000
 
-static const DRAM_ATTR uint16_t sensor_default_regs[][2] = {
+static const uint16_t sensor_default_regs[][2] = {
     {0x0103, 0x00},
     {REG_DLY, 100},
     {0x3035, 0x01},
@@ -380,7 +380,7 @@ static const DRAM_ATTR uint16_t sensor_default_regs[][2] = {
     {REGLIST_TAIL, 0x00}, // tail
 };
 
-static const DRAM_ATTR uint16_t sensor_framesize_VGA[][2] = {
+static const uint16_t sensor_framesize_VGA[][2] = {
     {0x0006, 0x10},
     {0x000D, 0x00},
     {0x000E, 0x00},
@@ -402,7 +402,7 @@ static const DRAM_ATTR uint16_t sensor_framesize_VGA[][2] = {
     {REGLIST_TAIL, 0x00},
 };
 
-static const DRAM_ATTR uint16_t sensor_framesize_QVGA[][2] = {
+static const uint16_t sensor_framesize_QVGA[][2] = {
     {0x355A, 0x74}, // vt_sys_d
     {0x355B, 0x0A}, // op_sys_d
     {0x355C, 0x77}, // mclk_div_d
@@ -464,7 +464,7 @@ static const DRAM_ATTR uint16_t sensor_framesize_QVGA[][2] = {
     {REGLIST_TAIL, 0x00},
 };
 
-static const DRAM_ATTR uint16_t sensor_framesize_240X240[][2] = {
+static const uint16_t sensor_framesize_240X240[][2] = {
     {0x0006, 0x00},
     {0x000D, 0x01},
     {0x000E, 0x11},
@@ -486,7 +486,7 @@ static const DRAM_ATTR uint16_t sensor_framesize_240X240[][2] = {
     {REGLIST_TAIL, 0x00},
 };
 
-static const DRAM_ATTR uint16_t sensor_framesize_QQVGA[][2] = {
+static const uint16_t sensor_framesize_QQVGA[][2] = {
     {0x355A, 0x74}, // vt_sys_d
     {0x355B, 0x0A}, // op_sys_d
     {0x355C, 0x77}, // mclk_div_d
